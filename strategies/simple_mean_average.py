@@ -56,13 +56,13 @@ class SimpleMovingAverage(InstrumentHandler):
     def plotCandles(self):
         fig = go.Figure(
         data=[go.Ohlc(
-                x=self.data.index,
-                open=self.data['o'],
-                high=self.data['h'],
-                low=self.data['l'],
-                close=self.data['c']
+                x=self.data.index.dropna(),
+                open=self.data['o'].dropna(),
+                high=self.data['h'].dropna(),
+                low=self.data['l'].dropna(),
+                close=self.data['c'].dropna()
             ),
-            go.Scatter(x=self.data.index, y=self.data['ma'], line=dict(color='blue', width=1)),
+            go.Scatter(x=self.data.index, y=self.data['ma'].dropna(), line=dict(color='blue', width=1)),
         ])
         fig.show()
     
