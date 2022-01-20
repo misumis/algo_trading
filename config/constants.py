@@ -7,6 +7,6 @@ HEADERS = {
     "Content-Type": "application/json; charset=utf-8"
 }
 INSTRUMENT = "BTC_USD"
-GRANULARITY= "M1"
+GRANULARITY= "D"
 GRANULARITY_SECONDS = 60
 PERIOD= "240"

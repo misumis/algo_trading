@@ -18,7 +18,7 @@ class SimpleMovingAverage(InstrumentHandler):
 
     # Private Methods
     def __getMovingAverage(self):
-        self.data['returns'] = self.data['c'].diff()
+        self.data['returns'] = self.data['c'].pct_change() * 100
         self.data['ma'] = self.data['c'].rolling(self.__MOVING_AVERAGE_PERIOD).mean()
         self.data['ratio'] = self.data['c'] / self.data['ma']
 
