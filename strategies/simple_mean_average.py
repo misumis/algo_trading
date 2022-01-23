@@ -9,17 +9,18 @@ import matplotlib.pyplot as plt
 # Improves candle plot with moving average line
 
 class SimpleMovingAverage(InstrumentHandler):
-    __MOVING_AVERAGE_PERIOD = 6
     __percentile_distribution = []
 
-    def __init__(self, instrument, **kwargs):
+    def __init__(self, instrument, sma_s, sma_l, **kwargs):
         super(SimpleMovingAverage, self).__init__(instrument, **kwargs)
+        self.sma_s = sma_s if sma_s else 20
+        self.sma_l = sma_l if sma_l else 80
         self.__getStrategyIndicators()
 
     # Private Methods
     def __getMovingAverage(self):
         self.data['returns'] = self.data['c'].pct_change() * 100
-        self.data['ma'] = self.data['c'].rolling(self.__MOVING_AVERAGE_PERIOD).mean()
+        self.data['ma'] = self.data['c'].rolling(self.sma_s).mean()
         self.data['ratio'] = self.data['c'] / self.data['ma']
 
     def __getPercentiles(self):
@@ -100,3 +101,12 @@ class SimpleMovingAverage(InstrumentHandler):
                 print("I sold 0.01 {}!".format(self.getInstrument()))
                 self.closePosition(self.getInstrument())       
         return None
+    
+    def count_SMA(self):
+        self.data["SMA_S"] = self.data.c.rolling(self.sma_s).mean()
+        self.data["SMA_L"] = self.data.c.rolling(self.sma_l).mean()
+        
+    def get_backtest_dataset(self):
+        self.data[['o','h','l','c']]
+        df = self.data.rename(columns={'o': 'Open','h': 'High','l': "Low",'c':"Close"})
+        return df

@@ -9,25 +9,29 @@ from services.account import AccountManager
 # Inherits AccountManager class
 # This class is strictly connected to Instrument only.
 # It main purpose is to create dataframe that can be used for further usage.
-# Additionaly can visualize Instruments candle plot. 
-# Used as a base for strategies. 
+# Additionaly can visualize Instruments candle plot.
+# Used as a base for strategies.
 
-class InstrumentHandler(AccountManager): 
+
+class InstrumentHandler(AccountManager):
     __instrument = INSTRUMENT
 
-    def __init__(self, instrument):
+    def __init__(self, instrument, granularity='D', period=365):
         self.__instrument = instrument
+        self.__granularity = granularity
+        self.__period = period
         self.data = pd.DataFrame()
         self.initializeInstrument()
         print("{} Initialized".format(instrument))
-    
-    def __getInstrument(self, period):
-        url = '{}instruments/{}/candles?granularity={}&count={}'.format(BASE_URL, self.__instrument, GRANULARITY, period)
+
+    def __getInstrument(self):
+        url = '{}instruments/{}/candles?granularity={}&count={}'.format(
+            BASE_URL, self.__instrument, self.__granularity, self.__period)
         return requests.get(url, headers=HEADERS).json()
 
-    def __getInstrumentDataframe(self, period = PERIOD):
+    def __getInstrumentDataframe(self):
         df = pd.DataFrame()
-        for i, row in enumerate(list(self.__getInstrument(period)['candles'])):
+        for i, row in enumerate(list(self.__getInstrument()['candles'])):
             df.loc[i, 'time'] = pd.to_datetime(row['time'])
             df.loc[i, 'o'] = pd.to_numeric(row['mid']['o'])
             df.loc[i, 'h'] = pd.to_numeric(row['mid']['h'])
@@ -41,18 +45,24 @@ class InstrumentHandler(AccountManager):
 
     def plotCandles(self):
         fig = go.Figure(
-        data=[go.Ohlc(
+            data=[go.Ohlc(
                 x=self.data.index,
                 open=self.data['o'],
                 high=self.data['h'],
                 low=self.data['l'],
                 close=self.data['c']
             ),
-        ])
+            ])
         fig.show()
-    
+
     def updateInstrument(self):
-        self.data = pd.concat([self.data, self.__getInstrumentDataframe(1)])
+        self.data = pd.concat([self.data, self.__getInstrumentDataframe()])
 
     def initializeInstrument(self):
         self.data = self.__getInstrumentDataframe()
+
+    def get_backtest_dataset(self):
+        self.data[['o', 'h', 'l', 'c']]
+        df = self.data.rename(
+            columns={'o': 'Open', 'h': 'High', 'l': "Low", 'c': "Close"})
+        return df

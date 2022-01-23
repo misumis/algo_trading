@@ -5,35 +5,43 @@ import matplotlib.pyplot as plt
 
 # MomentumStrategy Class
 
+
 class MomentumStrategy(InstrumentHandler):
-    
-    def __init__(self, instrument, **kwargs):
+    def __init__(self, instrument, window_length=14, **kwargs):
         super(MomentumStrategy, self).__init__(instrument, **kwargs)
+        self.window_length = window_length  # default value set on 14
+        self.__count_returns()
+        self.__define_movement()
+        self.__calculate_rsi()
+        self.__count_total()
 
-    def applyStategy(self):
-        self.updateInstrument()
-        self.__getStrategyIndicators()
+    def __count_returns(self):
+        self.data['return'] = self.data['c'].pct_change()
 
-        curr_status = self.data.iloc[-1]
-        pos = self.getCurrentInsturmentPositions()
+    def __define_movement(self):
+        self.data['movement'] = self.data['c'] - self.data['c'].shift(1)
+        self.data['up'] = np.where(
+            (self.data['movement'] > 0), self.data['movement'], 0)
+        self.data['down'] = np.where(
+            (self.data['movement'] < 0), self.data['movement'], 0)
 
-        # BUY SIGNAL 
-        print("Position: {} | Percentile Dist: {} | Ratio: {} | Close: {}".format(curr_status['position'], self.getPercDist()[0], curr_status['ratio'], curr_status['c']))
-        if curr_status['position'] == 1:        
-            if pos == None:
-                print("I bought 0.01 {}!".format(self.getInstrument()))
-                self.createOrder("BUY", self.getInstrument(), price=pos['c'], units=0.01)
-            else:
-                return None
-                # Close order
+    def __calculate_rsi(self):
+        # calculate moving average of the last 14 days  gains
+        up = self.data['up'].rolling(self.window_length).mean()
+        # calculate moving average of the last 14 days  losses
+        down = self.data['down'].abs().rolling(self.window_length).mean()
 
-        # SELL SIGNAL
-        if curr_status['position'] == -1:     
-            if pos == None:
-                # TODO: Conisder shorting
-                # self.createOrder("SELL", self.getInstrument(), price=pos['c'], units=0.01)
-                return None
-            else:
-                print("I sold 0.01 {}!".format(self.getInstrument()))
-                self.closePosition(self.getInstrument())       
-        return None
+        RS = up / down
+        self.data['rsi'] = 100.0 - (100.0 / (1.0 + RS))
+
+    def __count_total(self):
+        self.data['long'] = np.where((self.data['rsi'] < 30), 1, np.nan)
+        self.data['long'] = np.where(
+            (self.data['rsi'] > 70), 0, self.data['long'])
+
+        self.data['long'].ffill(inplace=True)
+
+        self.data['gain_loss'] = self.data['long'].shift(
+            1) * self.data['return']
+
+        self.data['total'] = self.data['gain_loss'].cumsum()

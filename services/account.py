@@ -11,6 +11,7 @@ from config.constants import HEADERS, BASE_URL
 # Create buy and sell orders
 # Close Position
 
+
 class AccountManager(object):
 
     __accountId = None
@@ -21,25 +22,29 @@ class AccountManager(object):
     def getAccountId(self):
         if self.__accountId != None:
             return self.__accountId
-        account = requests.get('{}accounts'.format(BASE_URL), headers=HEADERS).json()
+        account = requests.get('{}accounts'.format(
+            BASE_URL), headers=HEADERS).json()
         # TODO: Check if account exists else thor init error
         self.__accountId = account['accounts'][0]['id']
         return self.__accountId
 
     def getAccountDetails(self):
         return requests.get('{}accounts/{}'.format(BASE_URL, self.getAccountId()), headers=HEADERS).json()
-        
+
     def getOrders(self):
         return requests.get('{}accounts/{}/orders'.format(BASE_URL, self.getAccountId()), headers=HEADERS).json()
+
+    def getInstruments(self):
+        return requests.get('{}accounts/{}/instruments'.format(BASE_URL, self.getAccountId()), headers=HEADERS).json()
 
     def getPositions(self):
         return requests.get('{}accounts/{}/positions'.format(BASE_URL, self.getAccountId()), headers=HEADERS).json()
 
-    def createOrder(self, type, instrument, price, units = 0.01):
+    def createOrder(self, type, instrument, price, units=0.01):
         if type == "SELL" or type == "BUY":
             if type == "SELL":
                 units = -units
-            
+
             # TODO: Change limits to something more tangible. 1.03 and 0.98 are magic numbes
             takeProfit = round(price*1.03, 1)
             stopLoss = round(price*0.98, 1)
@@ -79,8 +84,7 @@ class AccountManager(object):
 
     def closePosition(self, instrument):
         body = {
-                "longUnits": "ALL"
-            }
+            "longUnits": "ALL"
+        }
         body = json.dumps(body)
         return requests.put("{}accounts/{}/positions/{}/close".format(BASE_URL, self.getAccountId(), instrument), headers=HEADERS, data=body)
-
